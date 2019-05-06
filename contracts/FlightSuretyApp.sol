@@ -1,10 +1,19 @@
-pragma solidity ^0.4.25;
+pragma solidity ^0.4.24;
 
 // It's important to avoid vulnerabilities due to numeric overflow bugs
 // OpenZeppelin's SafeMath library, when used correctly, protects agains such bugs
 // More info: https://www.nccgroup.trust/us/about-us/newsroom-and-events/blog/2018/november/smart-contract-insecurity-bad-arithmetic/
 
 import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
+
+
+
+contract FlightSuretyData {
+    function registerAirline(address newAirline, address registrator) external;
+    function isRegistered(address airlineAddress) external view returns(bool);
+}
+
+
 
 /************************************************** */
 /* FlightSurety Smart Contract                      */
@@ -16,6 +25,7 @@ contract FlightSuretyApp {
     /*                                       DATA VARIABLES                                     */
     /********************************************************************************************/
 
+    FlightSuretyData flightSuretyData;
     // Flight status codees
     uint8 private constant STATUS_CODE_UNKNOWN = 0;
     uint8 private constant STATUS_CODE_ON_TIME = 10;
@@ -63,6 +73,10 @@ contract FlightSuretyApp {
         _;
     }
 
+    modifier registrationPaid() {
+        require(flightSuretyData.isRegistered(msg.sender), "The registration fee has not been paid");
+        _;
+    }
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
     /********************************************************************************************/
@@ -101,15 +115,16 @@ contract FlightSuretyApp {
     *
     */   
     function registerAirline
-                            (   
+                            (   address newAirline
                             )
                             external
-                            pure
+                            requireIsOperational
+                            // registeredAirline
+                            registrationPaid
                             returns(bool success, uint256 votes)
     {
         return (success, 0);
     }
-
 
    /**
     * @dev Register a future flight for insuring.
@@ -119,7 +134,7 @@ contract FlightSuretyApp {
                                 (
                                 )
                                 external
-                                pure
+                                
     {
 
     }
@@ -335,3 +350,5 @@ contract FlightSuretyApp {
 // endregion
 
 }   
+
+

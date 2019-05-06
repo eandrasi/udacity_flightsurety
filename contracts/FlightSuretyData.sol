@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity ^0.4.24;
 
 import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
 
@@ -12,9 +12,18 @@ contract FlightSuretyData {
     address private contractOwner;                                      // Account used to deploy contract
     bool private operational = true;                                    // Blocks all state changes throughout the contract if false
 
+    mapping(address => bool) private authorizedCallers;
+    uint8 public airlinesCount; 
+
+    struct Airline {
+        bool isRegistered;
+        bool hasPaid;
+    }
+    mapping(address => Airline) public airlines;
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
+    event NewAirlineRegistered(address registrator, address newAirline);
 
 
     /**
@@ -56,6 +65,11 @@ contract FlightSuretyData {
         _;
     }
 
+    modifier authorizedCallersOnly() {
+        require(authorizedCallers[msg.sender] == true, "This address has not been authorized yet");
+        _;
+    }
+
     /********************************************************************************************/
     /*                                       UTILITY FUNCTIONS                                  */
     /********************************************************************************************/
@@ -93,17 +107,38 @@ contract FlightSuretyData {
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
 
+    function authorizeCaller
+                            ( address _address  
+                            )
+                            external
+                            pure
+    {
+    }
+
+    function isAirline (address airlineAddress) external returns(bool _valid) {
+        _valid = airlines[airlineAddress].isRegistered;
+    }
+
+    function isRegistered (address airlineAddress) external view returns(bool _valid) {
+        _valid = airlines[airlineAddress].isRegistered;
+    }
+
    /**
     * @dev Add an airline to the registration queue
     *      Can only be called from FlightSuretyApp contract
     *
     */   
     function registerAirline
-                            (   
+                            (   address newAirline,
+                                address registrator
                             )
                             external
-                            pure
+                            requireIsOperational
+                            authorizedCallersOnly
     {
+        airlinesCount++;
+        airlines[newAirline].isRegistered = true;
+        emit NewAirlineRegistered(registrator, newAirline);
     }
 
 
