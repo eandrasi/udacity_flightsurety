@@ -20,6 +20,8 @@ contract FlightSuretyData {
         bool hasPaid;
     }
     mapping(address => Airline) public airlines;
+    uint8 public countAirlines;
+    address public firstAirline;
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
@@ -32,9 +34,9 @@ contract FlightSuretyData {
     */
     constructor (address _firstAirline) public {
         contractOwner = msg.sender;
-        // firstAirline = _firstAirline;
-        // registeredAirlinesCount = 1;
-        // airlines[firstAirline].isRegistered = true;
+        firstAirline = _firstAirline;
+        countAirlines = 1;
+        airlines[firstAirline].isRegistered = true;
     }
 
     /********************************************************************************************/
