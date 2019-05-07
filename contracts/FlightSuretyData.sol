@@ -13,19 +13,21 @@ contract FlightSuretyData {
     bool private operational = true;                                    // Blocks all state changes throughout the contract if false
 
     mapping(address => bool) private authorizedCallers;
-    uint8 public airlinesCount; 
 
     struct Airline {
         bool isRegistered;
         bool hasPaid;
     }
     mapping(address => Airline) public airlines;
-    uint8 public countAirlines;
+    uint public countAirlines;
+    uint public operationalAirlinesCount;                    //Airlines that also paid the funding
+    mapping(address => bool) public operationalAirlines;
     address public firstAirline;
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
     event NewAirlineRegistered(address registrator, address newAirline);
+    event AirlinePaidFunding(address airlineAddress);
 
 
     /**
@@ -36,6 +38,7 @@ contract FlightSuretyData {
         contractOwner = msg.sender;
         firstAirline = _firstAirline;
         countAirlines = 1;
+        operationalAirlinesCount = 1;
         airlines[firstAirline].isRegistered = true;
     }
 
@@ -107,6 +110,17 @@ contract FlightSuretyData {
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
+    function payFunding(address fundingAddress) 
+                public
+                // requireIsOperational
+                // callerAuthoriyed
+                payable
+                {
+                    airlines[fundingAddress].hasPaid = true;
+                    operationalAirlinesCount++;
+                    operationalAirlines[fundingAddress] = true;
+                    emit AirlinePaidFunding(fundingAddress);
+                }
 
     function authorizeCaller
                             ( address _address  
@@ -124,6 +138,10 @@ contract FlightSuretyData {
         _valid = airlines[airlineAddress].isRegistered;
     }
 
+    function isAirlineOperational (address airlineAddress) external view returns(bool _valid) {
+        _valid = operationalAirlines[airlineAddress];
+    }
+
    /**
     * @dev Add an airline to the registration queue
     *      Can only be called from FlightSuretyApp contract
@@ -135,9 +153,9 @@ contract FlightSuretyData {
                             )
                             external
                             requireIsOperational
-                            authorizedCallersOnly
+                            // authorizedCallersOnly
     {
-        airlinesCount++;
+        countAirlines++;
         airlines[newAirline].isRegistered = true;
         emit NewAirlineRegistered(registrator, newAirline);
     }

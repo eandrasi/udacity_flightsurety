@@ -11,6 +11,9 @@ import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
 contract FlightSuretyData {
     function registerAirline(address newAirline, address registrator) external;
     function isRegistered(address airlineAddress) external view returns(bool);
+    function payFunding(address airlineAddress) external payable;
+    function isAirlineOperational (address airlineAddress) external view returns(bool _valid);
+    function operationalAirlinesCount() external view returns(uint);
 }
 
 
@@ -111,26 +114,33 @@ contract FlightSuretyApp {
     /********************************************************************************************/
 
   
-   /**
-    * @dev Add an airline to the registration queue
-    *
-    */   
-    function registerAirline
-                            (   address newAirline
-                            )
-                            external
-                            requireIsOperational
-                            // registeredAirline
-                            registrationPaid
-                            returns(bool success, uint256 votes)
-    {
-        return (success, 0);
-    }
 
-   /**
-    * @dev Register a future flight for insuring.
-    *
-    */  
+    function registerAirline (address newAirline)
+                external
+                requireIsOperational
+                // registeredAirline
+                registrationPaid
+                returns(bool success, uint256 votes)
+        {
+            if(flightSuretyData.operationalAirlinesCount() < 4) {
+                // if less than 4 the caller must be one of the operational airlines
+                require(flightSuretyData.isAirlineOperational(msg.sender),
+                        "Only operational Airlines can register new airlines");
+                flightSuretyData.registerAirline(newAirline, msg.sender);
+            } else {
+                // we need to vote to give permission
+            }
+        }
+
+    function payFunding() external
+                // airlineRegistered
+                // enoughFund
+                // requireIsOperational
+                payable
+                {
+                    flightSuretyData.payFunding.value(msg.value)(msg.sender);
+                }
+
     function registerFlight
                                 (
                                 )

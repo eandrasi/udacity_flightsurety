@@ -25,6 +25,41 @@ describe.only("Airline registration", () => {
       assert.isFalse(await config.flightSuretyData.isAirline.call(accounts[2]), 
       "accounts[2] is not registered at contract deployment")
     })
+
+    it("firstAirline can't register another until the it has paid the required fund ammount", async () => {
+        let newAirline = accounts[2];
+
+        await truffleAssert.fails(
+            config.flightSuretyApp.registerAirline(newAirline, {from: config.firstAirline},
+                truffleAssert.ErrorType.REVERT,
+                "Only operational Airlines can register new airlines" )
+        );
+        // await config.flightSuretyApp.registerAirline(newAirline, {from: config.firstAirline});
+        // assert.isFalse(await config.flightSuretyData.isAirline.call(accounts[2]));
+    })
+
+    it("can get the number of airlines registered", async () => {
+        let result = await config.flightSuretyData.countAirlines.call()
+        assert.equal(result.toNumber(), 1, "count of airlines does not match")
+    })
+
+    it("firstAirline can pay the fund", async () => {
+        let fundingValue = web3.toWei('10', 'ether')
+        let initialBalance = await web3.eth.getBalance(config.flightSuretyData.address)
+        await config.flightSuretyApp.payFunding({from: config.firstAirline, value: fundingValue})
+        let newBalance = await web3.eth.getBalance(config.flightSuretyData.address)
+        assert.equal(newBalance.toNumber(), initialBalance.toNumber() + fundingValue, "Funds have not been transfered")
+    })
+
+    it("firstAirline can register another airline after the fund has been paid", async () => {
+        let newAirline = accounts[2];
+        await config.flightSuretyApp.registerAirline(newAirline, {from: config.firstAirline});
+        assert.isTrue(await config.flightSuretyData.isAirline.call(accounts[2]), 
+                    "the accounts[2] has not been registered as an airline");
+
+        let result = await config.flightSuretyData.countAirlines.call()
+        assert.equal(result.toNumber(), 2, "count of airlines does not match")
+    })
 })
 
 describe("Initial flightSurety tests", ()=>{
