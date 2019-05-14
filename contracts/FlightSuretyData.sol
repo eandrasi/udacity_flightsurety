@@ -38,7 +38,7 @@ contract FlightSuretyData {
         contractOwner = msg.sender;
         firstAirline = _firstAirline;
         countAirlines = 1;
-        operationalAirlinesCount = 1;
+        operationalAirlinesCount = 0;               // it must still pay the fund
         airlines[firstAirline].isRegistered = true;
     }
 

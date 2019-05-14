@@ -15,7 +15,7 @@ contract('Flight Surety Tests', async (accounts) => {
 /* Operations and Settings                                                              */
 /****************************************************************************************/
 
-describe.only("Airline registration", () => {
+describe("Airline registration", () => {
     it("the firstAirline is already registered at contract deployment", async () => {
       assert.isTrue(await config.flightSuretyData.isAirline.call(config.firstAirline), 
                                 "config.firstAirline is not registered at contract deployment")
@@ -60,7 +60,71 @@ describe.only("Airline registration", () => {
         let result = await config.flightSuretyData.countAirlines.call()
         assert.equal(result.toNumber(), 2, "count of airlines does not match")
     })
+
+    it("can register up to 4 airlines without voting", async () => {
+        let newAirline1 = accounts[3];
+        let newAirline2 = accounts[4];
+        await config.flightSuretyApp.registerAirline(newAirline1, {from: config.firstAirline});
+        await config.flightSuretyApp.registerAirline(newAirline2, {from: config.firstAirline});
+        let countAirlines = await config.flightSuretyData.countAirlines.call()
+        assert.equal(countAirlines, 4, "Could not register airlines")
+    })
+
+    it("airlines 2, 3 and 4 can pay the fund", async () => {
+        let countAirlines = await config.flightSuretyData.countAirlines.call()
+        let operationalAirlines = await config.flightSuretyData.operationalAirlinesCount.call()
+        // console.log(`Count airlines is: ${countAirlines} | operationa airlines count: ${operationalAirlines}`)
+        let fundingValue = web3.toWei('10', 'ether')
+        await config.flightSuretyApp.payFunding({from: accounts[2], value: fundingValue})
+        await config.flightSuretyApp.payFunding({from: accounts[3], value: fundingValue})
+        await config.flightSuretyApp.payFunding({from: accounts[4], value: fundingValue})
+        let newOperationalAirlines = await config.flightSuretyData.operationalAirlinesCount.call()
+        assert.equal(newOperationalAirlines.toNumber(), 4, "not all airlines have paid funding")
+    })
+
+    it("can't register 5th airline until voting is complete", async () => {
+        let newAirline = accounts[5]
+        await config.flightSuretyApp.registerAirline(newAirline, {from: config.firstAirline})
+        let countAirlines = await config.flightSuretyData.countAirlines.call()
+        assert.equal(countAirlines, 4, "Number of airlines is wrong")
+    })
+
+    it("airlinesAwaitingVotes contains address of accounts[5]", async () => {
+        let result = await config.flightSuretyApp.getAirlinesAwaitingVotes.call()
+        assert.include(result, accounts[5])
+    })
+
+    it("other airlines can vote on registering the new airline", async () => {
+        let newAirline = accounts[5]
+        await config.flightSuretyApp.voteAirline(newAirline, {from: config.firstAirline})
+        await config.flightSuretyApp.voteAirline(newAirline, {from: accounts[2]})
+        let result = await config.flightSuretyApp.getVotesOnNewRegistration.call(newAirline);
+        assert.include(result, config.firstAirline)
+        assert.include(result, accounts[2])
+    })
+
+    it("can count number of votes", async () => {
+        let result = await config.flightSuretyApp.getVotesCount(accounts[5])
+        assert.equal(result.toNumber(), 2, "Wrong count on votes")
+    })
+
+    it("should not register vote twice if same airline votes multiple times", async () => {
+        let initialVoteCount = await config.flightSuretyApp.getVotesCount(accounts[5])
+        await config.flightSuretyApp.voteAirline(accounts[5], {from: accounts[2]})
+        let afterVoteCount = await config.flightSuretyApp.getVotesCount(accounts[5])
+        assert.equal(initialVoteCount.toNumber(), afterVoteCount.toNumber(), "Same vote was registered twice")
+    })
+
+    it("registers the new airline once more than 50% of the votes are given", async () => {
+        let newAirline = accounts[5]
+        let initialRegisteredAirlines = await config.flightSuretyData.countAirlines.call()
+        await config.flightSuretyApp.voteAirline(newAirline, {from: accounts[3]}) 
+        let afterRegisteredAirline = await config.flightSuretyData.countAirlines.call()
+        assert.equal(initialRegisteredAirlines.toNumber() + 1, afterRegisteredAirline, "The airline has not been registered")
+    })
 })
+
+
 
 describe("Initial flightSurety tests", ()=>{
     it(`(multiparty) has correct initial isOperational() value`, async function () {
@@ -117,26 +181,6 @@ describe("Initial flightSurety tests", ()=>{
     
           // Set it back for other tests to work
           await config.flightSuretyData.setOperatingStatus(true);
-    
-      });
-    
-      it('(airline) cannot register an Airline using registerAirline() if it is not funded', async () => {
-        
-        // ARRANGE
-        let newAirline = accounts[2];
-    
-        // ACT
-        try {
-            await config.flightSuretyApp.registerAirline(newAirline, {from: config.firstAirline});
-        }
-        catch(e) {
-            console.log(e)
-        }
-        let result = await config.flightSuretyData.isAirline.call(accounts[2]); 
-        // console.log(result)
-    
-        // ASSERT
-        assert.equal(result, false, "Airline should not be able to register another airline if it hasn't provided funding");
     
       });
   })

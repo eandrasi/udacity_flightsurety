@@ -49,6 +49,9 @@ contract FlightSuretyApp {
     }
     mapping(bytes32 => Flight) private flights;
 
+    mapping(address => address[]) public votesOnNewRegistration;
+    address[] public airlinesAwaitingVotes;
+
  
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -129,8 +132,44 @@ contract FlightSuretyApp {
                 flightSuretyData.registerAirline(newAirline, msg.sender);
             } else {
                 // we need to vote to give permission
+                airlinesAwaitingVotes.push(newAirline);
             }
         }
+
+    function voteAirline(address newAirline) external 
+                requireIsOperational
+                // requireIsRegistered          the address on which to vote has to be registered first
+
+                {
+                    bool doubleVote = false;
+                    for (uint i=0; i < votesOnNewRegistration[newAirline].length; i++) {
+                        if (votesOnNewRegistration[newAirline][i] == msg.sender) {
+                            doubleVote = true;
+                            break;
+                        }
+                    }
+
+                    if(!doubleVote) {
+                        votesOnNewRegistration[newAirline].push(msg.sender);
+                    }
+
+                    // if more than 50% of the airlines voted, the newAirline will be registered.
+                    if(votesOnNewRegistration[newAirline].length > flightSuretyData.operationalAirlinesCount().div(2)) {
+                        flightSuretyData.registerAirline(newAirline, msg.sender);
+                    }
+                }
+    
+    function getAirlinesAwaitingVotes () external returns (address[] memory airlines) {
+        airlines = airlinesAwaitingVotes;
+    }
+
+    function getVotesOnNewRegistration(address newAirline) external returns(address[] memory votes) {
+        votes = votesOnNewRegistration[newAirline];
+    }
+
+    function getVotesCount(address newAirline) public view returns (uint count) {
+        count = votesOnNewRegistration[newAirline].length;
+    }
 
     function payFunding() external
                 // airlineRegistered
