@@ -14,6 +14,7 @@ contract FlightSuretyData {
     function payFunding(address airlineAddress) external payable;
     function isAirlineOperational (address airlineAddress) external view returns(bool _valid);
     function operationalAirlinesCount() external view returns(uint);
+    function registerFlight(address airline, string flightNumber, uint flightTime) external;
 }
 
 
@@ -52,6 +53,8 @@ contract FlightSuretyApp {
     mapping(address => address[]) public votesOnNewRegistration;
     address[] public airlinesAwaitingVotes;
 
+
+    event FlightRegistered(address airline, string flightNumber, uint flightTime);
  
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -180,13 +183,10 @@ contract FlightSuretyApp {
                     flightSuretyData.payFunding.value(msg.value)(msg.sender);
                 }
 
-    function registerFlight
-                                (
-                                )
-                                external
-                                
+    function registerFlight(address airline, string flightNumber, uint flightTime) external requireIsOperational // registeredAirline
     {
-
+        flightSuretyData.registerFlight(airline, flightNumber, flightTime);
+        emit FlightRegistered(airline, flightNumber, flightTime);
     }
     
    /**

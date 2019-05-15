@@ -18,7 +18,16 @@ contract FlightSuretyData {
         bool isRegistered;
         bool hasPaid;
     }
+
+    struct Flight {
+        address airline;
+        string flightNumber;
+        uint flightTime;
+    }
+
     mapping(address => Airline) public airlines;
+    mapping(bytes32 => Flight) public flights;
+
     uint public countAirlines;
     uint public operationalAirlinesCount;                    //Airlines that also paid the funding
     mapping(address => bool) public operationalAirlines;
@@ -28,6 +37,7 @@ contract FlightSuretyData {
     /********************************************************************************************/
     event NewAirlineRegistered(address registrator, address newAirline);
     event AirlinePaidFunding(address airlineAddress);
+    // event RegisteredFlight(address airline, string flightNumber, uint flightTime, bytes32 flightKey);
 
 
     /**
@@ -160,6 +170,15 @@ contract FlightSuretyData {
         emit NewAirlineRegistered(registrator, newAirline);
     }
 
+    function registerFlight(address airline, string flightNumber, uint flightTime) external requireIsOperational /*requireCallerAuthorized*/ {
+        Flight memory newFlight = Flight(airline, flightNumber, flightTime);
+        // bytes32 flightKey = keccak256(abi.encodePacked(flightNumber, flightTime));
+        bytes32 flightKey = getFlightKey(airline, flightNumber, flightTime);
+        flights[flightKey] = newFlight;
+
+        // emit RegisteredFlight(airline, flightNumber, flightTime, flightKey);
+    }
+
 
    /**
     * @dev Buy insurance for a flight
@@ -218,7 +237,7 @@ contract FlightSuretyData {
                             uint256 timestamp
                         )
                         pure
-                        internal
+                        public
                         returns(bytes32) 
     {
         return keccak256(abi.encodePacked(airline, flight, timestamp));
