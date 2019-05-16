@@ -16,7 +16,7 @@ contract('Flight Surety Tests', async (accounts) => {
 /* Operations and Settings                                                              */
 /****************************************************************************************/
 
-describe.only("Airline registration", () => {
+describe("Airline registration", () => {
 
     describe("Registering new Airlines", () => {
 
@@ -134,7 +134,7 @@ describe.only("Airline registration", () => {
             let flightNumber = "FL100"
             let flightTime = Math.floor(Date.now() / 1000) + 10000
             let result = await config.flightSuretyApp.registerFlight(config.firstAirline, flightNumber, flightTime)
-            truffleAssert.eventEmitted(result, 'FlightRegistered')
+            truffleAssert.eventEmitted(result, 'FlightRegistered') 
         })
 
         it("can read flight information", async () => {
@@ -150,6 +150,89 @@ describe.only("Airline registration", () => {
         })
     })
 
+})
+
+describe.only("Pasangers Tests", () => {
+    let flights = []
+    
+    it("can set up seed data", async () => {
+        let flightKey
+        let fundingValue = web3.toWei('10', 'ether')
+        // let newAirline1 = accounts[2];
+        // let newAirline2 = accounts[3];
+        await config.flightSuretyApp.payFunding({from: config.firstAirline, value: fundingValue})
+        // await config.flightSuretyApp.registerAirline(newAirline1, {from: config.firstAirline});
+        // await config.flightSuretyApp.registerAirline(newAirline2, {from: config.firstAirline});
+        // await config.flightSuretyApp.payFunding({from: newAirline1, value: fundingValue})
+        // await config.flightSuretyApp.payFunding({from: newAirline2, value: fundingValue})
+
+        let flightNumber = "FL300"
+        let flightTime = Math.floor(Date.now() / 1000) + 10000
+        await config.flightSuretyApp.registerFlight(config.firstAirline, flightNumber, flightTime)
+        flightKey = await config.flightSuretyData.getFlightKey.call(config.firstAirline, flightNumber, flightTime)
+        
+        let readFlight = await config.flightSuretyData.flights.call(flightKey)
+        
+        assert.include(readFlight, config.firstAirline)
+        assert.include(readFlight, "FL300")
+        assert.equal(readFlight[2].toNumber(), flightTime)
+
+        await config.flightSuretyApp.registerFlight(config.firstAirline, "FlightTooOld", 100)
+    })
+
+    it("can list all flights", async () => {
+        let size = await config.flightSuretyData.flightKeysSize.call();
+        for(i = 0; i < size; i++){
+            let flKey = await config.flightSuretyData.flightKeys.call(i)
+            // console.log(`flkey: ${flKey}`)
+            let flight = await config.flightSuretyData.flights.call(flKey)
+            // console.log(`flight: ${flight}`)
+            flights.push(flight)
+        }
+        // console.log(`All flights: ${flights}`)
+        assert.equal(flights.length, 2, "flights should contain 2 items")
+        assert.include(flights[0], "FL300")
+        assert.include(flights[1], "FlightTooOld")
+    })
+
+    it("can buy insurance only for existing flight", async () => {
+        let flightKey = flights[0][0]
+        let ammount = web3.toWei('0.2345', 'ether')
+        let exisitingFlight = await config.flightSuretyApp.buyInsurance(flightKey, ammount)
+        // console.log(exisitingFlight)
+
+        let insurancesSize = await config.flightSuretyData.insurancesSize.call(flightKey)
+        console.log(`InsurancesSize: ${insurancesSize}`)
+
+        let insuranceAtZero = await config.flightSuretyData.getInsuranceForIndex.call(flightKey, 0)
+        console.log(`Insurance At index 0: ${insuranceAtZero}`)
+        // assert true for existing flight
+        // assert false for non exisitng fight
+    })
+    
+    it("can buy insurance only for future flights", async () => {
+        // assert fail when trying to buy insurance for flight in the past
+    })
+
+    it("can buy insurance for max ammount of 1 eth", async () => {
+        // assert true for 0.8 eth
+        // assert false for 1.2 eth
+    })
+    
+    it("can receive credit when flight is delayed", async () => {
+        // credit received when flight delayed
+        // credit not received when flight on time
+    })
+
+    it("can withdraw funds owed from insurance payout", async () => {
+        // true for flight delayed
+    })
+
+
+
+    it("", async () => {})
+
+    it("", async () => {})
 })
 
 

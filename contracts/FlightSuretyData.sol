@@ -25,8 +25,17 @@ contract FlightSuretyData {
         uint flightTime;
     }
 
+    struct Insurance {
+        address insured;
+        uint amountPaid;
+        uint balance;
+    }
+
     mapping(address => Airline) public airlines;
     mapping(bytes32 => Flight) public flights;
+    mapping(bytes32 => Insurance[]) public insurances;
+    
+    bytes32[] public flightKeys;
 
     uint public countAirlines;
     uint public operationalAirlinesCount;                    //Airlines that also paid the funding
@@ -175,8 +184,13 @@ contract FlightSuretyData {
         // bytes32 flightKey = keccak256(abi.encodePacked(flightNumber, flightTime));
         bytes32 flightKey = getFlightKey(airline, flightNumber, flightTime);
         flights[flightKey] = newFlight;
+        flightKeys.push(flightKey);
 
         // emit RegisteredFlight(airline, flightNumber, flightTime, flightKey);
+    }
+
+    function flightKeysSize() public returns (uint size) {
+        size = flightKeys.length;
     }
 
 
@@ -184,13 +198,22 @@ contract FlightSuretyData {
     * @dev Buy insurance for a flight
     *
     */   
-    function buy
-                            (                             
-                            )
+    function buyInsurance (address insured, bytes32 flightKey, uint amount)
                             external
                             payable
-    {
+                            {
+                                Insurance memory newInsurance = Insurance(insured, amount, 0);
+                                insurances[flightKey].push(newInsurance);
+                            }
+                        
+    function getInsuranceForIndex(bytes32 flightKey, uint index) external returns (address insured, uint amountPaid, uint balance) {
+        insured = insurances[flightKey][index].insured;
+        amountPaid = insurances[flightKey][index].amountPaid;
+        balance = insurances[flightKey][index].balance;
+    }
 
+    function insurancesSize (bytes32 flightKey) public returns (uint size) {
+        size = insurances[flightKey].length;
     }
 
     /**

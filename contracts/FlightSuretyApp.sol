@@ -15,6 +15,7 @@ contract FlightSuretyData {
     function isAirlineOperational (address airlineAddress) external view returns(bool _valid);
     function operationalAirlinesCount() external view returns(uint);
     function registerFlight(address airline, string flightNumber, uint flightTime) external;
+    function buyInsurance(address insured, bytes32 flightKey, uint amount) external;
 }
 
 
@@ -55,6 +56,7 @@ contract FlightSuretyApp {
 
 
     event FlightRegistered(address airline, string flightNumber, uint flightTime);
+    event InsuranceBought(address insured, bytes32 flightKey, uint amount);
  
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -188,6 +190,18 @@ contract FlightSuretyApp {
         flightSuretyData.registerFlight(airline, flightNumber, flightTime);
         emit FlightRegistered(airline, flightNumber, flightTime);
     }
+
+    function buyInsurance(bytes32 flightKey, uint amount) 
+                external 
+                // requireIsOperational
+                // checkValueForMaxAmount
+                // requireFlightExist
+                payable
+                {
+                    flightSuretyData.buyInsurance(msg.sender, flightKey, amount);
+                    emit InsuranceBought(msg.sender, flightKey, amount);
+                }
+
     
    /**
     * @dev Called after oracle has updated flight status
