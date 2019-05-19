@@ -146,13 +146,13 @@ describe("Airline registration", () => {
 
             assert.include(readFlight, config.firstAirline)
             assert.include(readFlight, "FL200")
-            assert.equal(readFlight[2].toNumber(), flightTime)
+            assert.equal(readFlight[3].toNumber(), flightTime)
         })
     })
 
 })
 
-describe.only("Pasangers Tests", () => {
+describe("Passengers Tests", () => {
     let flights = []
     
     it("can set up seed data", async () => {
@@ -190,18 +190,18 @@ describe.only("Pasangers Tests", () => {
             flights.push(flight)
         }
         // console.log(`All flights: ${flights}`)
-        assert.equal(flights.length, 2, "flights should contain 2 items")
-        assert.include(flights[0], "FL300")
-        assert.include(flights[1], "FlightTooOld")
+        assert.equal(flights.length, 4, "flights should contain 4 items")
+        assert.include(flights[2], "FL300")
+        assert.include(flights[3], "FlightTooOld")
     })
 
     it("can get one flight using the getter", async () => {
-        let flight = await config.flightSuretyData.getFlight.call(flights[0][0])
+        let flight = await config.flightSuretyData.getFlight.call(flights[2][0])
         assert.include(flight, "FL300")
     })
 
     it("can get the time of a flight", async () => {
-        let flightTime = await config.flightSuretyData.getFlightTime.call(flights[1][0])
+        let flightTime = await config.flightSuretyData.getFlightTime.call(flights[3][0])
         assert.equal(flightTime.toNumber(), 100, "Flight time not as expected")
     })
 
@@ -209,14 +209,14 @@ describe.only("Pasangers Tests", () => {
         let flightKeyOk = flights[0][0]
         let falseFlightKey = await config.flightSuretyData.getFlightKey.call(config.firstAirline, "123456789", 1234567)
 
-        let passager1 = accounts[11]
+        let passenger1 = accounts[11]
         let ammount = web3.toWei('0.2345', 'ether')
         
-        let exisitingFlight = await config.flightSuretyApp.buyInsurance(flightKeyOk, {from: passager1, value: ammount})
+        let exisitingFlight = await config.flightSuretyApp.buyInsurance(flightKeyOk, {from: passenger1, value: ammount})
         await truffleAssert.eventEmitted(exisitingFlight, 'InsuranceBought') 
         
         await truffleAssert.fails(
-            config.flightSuretyApp.buyInsurance(falseFlightKey, {from: passager1, value: ammount}), 
+            config.flightSuretyApp.buyInsurance(falseFlightKey, {from: passenger1, value: ammount}), 
             truffleAssert.ErrorType.REVERT, "The flightKey does not exist"
         )
     })
@@ -226,11 +226,11 @@ describe.only("Pasangers Tests", () => {
         let flightKey1 = flights[0][0]
         let ammount1 = web3.toWei('0.1111', 'ether')
         let ammount2 = web3.toWei('0.2222', 'ether')
-        let passager1 = accounts[12]
-        let passager2 = accounts[13]
+        let passenger1 = accounts[12]
+        let passenger2 = accounts[13]
 
-        await config.flightSuretyApp.buyInsurance(flightKey1, {from: passager1, value: ammount1})
-        await config.flightSuretyApp.buyInsurance(flightKey1, {from: passager2, value: ammount2})
+        await config.flightSuretyApp.buyInsurance(flightKey1, {from: passenger1, value: ammount1})
+        await config.flightSuretyApp.buyInsurance(flightKey1, {from: passenger2, value: ammount2})
         
         let insurancesSize = await config.flightSuretyData.insurancesSize.call(flightKey1)
 
@@ -243,16 +243,16 @@ describe.only("Pasangers Tests", () => {
         // console.log(`Insurances: ${JSON.stringify(insurances)}`)
         
         assert.isArray(insurances)
-        assert.nestedInclude(insurances[1], passager1)
-        assert.include(insurances[2], passager2)
+        assert.nestedInclude(insurances[1], passenger1)
+        assert.include(insurances[2], passenger2)
     })
     
     it("can't buy insurance for old flights", async () => {
-        let flightKeyOld = flights[1][0]
+        let flightKeyOld = flights[3][0]
         let ammount = web3.toWei('0.2345', 'ether')
-        let passager1 = accounts[12]
+        let passenger1 = accounts[12]
         await truffleAssert.fails(
-            config.flightSuretyApp.buyInsurance(flightKeyOld, {from: passager1, value: ammount}), 
+            config.flightSuretyApp.buyInsurance(flightKeyOld, {from: passenger1, value: ammount}), 
             truffleAssert.ErrorType.REVERT, 
             "The flight is too old"
             )
@@ -261,9 +261,9 @@ describe.only("Pasangers Tests", () => {
     it("can buy insurance for max ammount of 1 eth", async () => {
         let flightKey1 = flights[0][0]
         let ammountTooHigh = web3.toWei('5.2', 'ether')
-        let passager3 = accounts[14]
+        let passenger3 = accounts[14]
         await truffleAssert.fails(
-            config.flightSuretyApp.buyInsurance(flightKey1, {from: passager3, value: ammountTooHigh}), 
+            config.flightSuretyApp.buyInsurance(flightKey1, {from: passenger3, value: ammountTooHigh}), 
             truffleAssert.ErrorType.REVERT, 
             "Maximum admited value oversteped"
             )
