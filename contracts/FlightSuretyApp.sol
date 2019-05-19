@@ -16,6 +16,9 @@ contract FlightSuretyData {
     function operationalAirlinesCount() external view returns(uint);
     function registerFlight(address airline, string flightNumber, uint flightTime) external;
     function buyInsurance(address insured, bytes32 flightKey, uint amount) external;
+    function getFlightTime(bytes32 flightKey) public returns(uint flightTime);
+    function getFlight(bytes32 _flightKey) public returns 
+        (bytes32 flightKey, address airline, string flightNumber, uint flightTime);
 }
 
 
@@ -90,6 +93,26 @@ contract FlightSuretyApp {
         require(flightSuretyData.isRegistered(msg.sender), "The registration fee has not been paid");
         _;
     }
+
+    modifier requireFlightExist(bytes32 _flightKey) {
+        (bytes32 flightKey, address airline, string memory flightNumber, uint flightTime) = flightSuretyData.getFlight(_flightKey);
+        require(flightKey == _flightKey, "The flightKey does not exist");
+        _;
+    }
+
+    modifier flightNotExpired(bytes32 _flightKey) {
+        (bytes32 flightKey, address airline, string memory flightNumber, uint flightTime) = flightSuretyData.getFlight(_flightKey);
+        // uint minimumTime = block.timestamp + 1000;
+        // require(flightTime > minimumTime , "The flight is too old");
+        require(flightTime > (block.timestamp + 1000) , "The flight is too old");
+        _;
+    }
+
+    modifier checkValueForMaxAmount() {
+        require(msg.value < (1 ether), "Maximum admited value oversteped");
+        _;
+    }
+
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
     /********************************************************************************************/
@@ -191,17 +214,17 @@ contract FlightSuretyApp {
         emit FlightRegistered(airline, flightNumber, flightTime);
     }
 
-    function buyInsurance(bytes32 flightKey, uint amount) 
+    function buyInsurance(bytes32 flightKey) 
                 external 
-                // requireIsOperational
-                // checkValueForMaxAmount
-                // requireFlightExist
+                requireIsOperational
+                requireFlightExist(flightKey)
+                flightNotExpired(flightKey)
+                checkValueForMaxAmount
                 payable
                 {
-                    flightSuretyData.buyInsurance(msg.sender, flightKey, amount);
-                    emit InsuranceBought(msg.sender, flightKey, amount);
+                    flightSuretyData.buyInsurance(msg.sender, flightKey, msg.value);
+                    emit InsuranceBought(msg.sender, flightKey, msg.value);
                 }
-
     
    /**
     * @dev Called after oracle has updated flight status

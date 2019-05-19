@@ -20,6 +20,7 @@ contract FlightSuretyData {
     }
 
     struct Flight {
+        bytes32 flightKey;
         address airline;
         string flightNumber;
         uint flightTime;
@@ -180,9 +181,9 @@ contract FlightSuretyData {
     }
 
     function registerFlight(address airline, string flightNumber, uint flightTime) external requireIsOperational /*requireCallerAuthorized*/ {
-        Flight memory newFlight = Flight(airline, flightNumber, flightTime);
         // bytes32 flightKey = keccak256(abi.encodePacked(flightNumber, flightTime));
         bytes32 flightKey = getFlightKey(airline, flightNumber, flightTime);
+        Flight memory newFlight = Flight(flightKey, airline, flightNumber, flightTime);
         flights[flightKey] = newFlight;
         flightKeys.push(flightKey);
 
@@ -193,6 +194,18 @@ contract FlightSuretyData {
         size = flightKeys.length;
     }
 
+    function getFlightTime(bytes32 flightKey) public returns(uint flightTime) {
+        flightTime = flights[flightKey].flightTime;
+    }
+
+    function getFlight(bytes32 _flightKey) public returns 
+        (bytes32 flightKey, address airline, string flightNumber, uint flightTime) 
+        {
+            flightKey = flights[_flightKey].flightKey;
+            airline = flights[_flightKey].airline;
+            flightNumber = flights[_flightKey].flightNumber;
+            flightTime = flights[_flightKey].flightTime;
+        }
 
    /**
     * @dev Buy insurance for a flight
