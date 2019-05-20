@@ -60,6 +60,7 @@ contract FlightSuretyApp {
 
     event FlightRegistered(address airline, string flightNumber, uint flightTime);
     event InsuranceBought(address insured, bytes32 flightKey, uint amount);
+    event OperationalAppStateChanged(bool operational);
  
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -76,7 +77,7 @@ contract FlightSuretyApp {
     modifier requireIsOperational() 
     {
          // Modify to call data contract's status
-        require(true, "Contract is currently not operational");  
+        require(isOperational, "Contract is currently not operational");  
         _;  // All modifiers require an "_" which indicates where the function body will be added
     }
 
@@ -132,13 +133,14 @@ contract FlightSuretyApp {
     /*                                       UTILITY FUNCTIONS                                  */
     /********************************************************************************************/
 
-    // function isOperational() 
-    //                         public 
-    //                         pure 
-    //                         returns(bool) 
-    // {
-    //     return true;  // Modify to call data contract's status
-    // }
+    function setOperational(bool operating) 
+                            external 
+                            requireContractOwner
+    {
+        isOperational = operating;
+        emit OperationalAppStateChanged(isOperational);
+    }
+
 
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
@@ -187,7 +189,7 @@ contract FlightSuretyApp {
                     }
                 }
     
-    function getAirlinesAwaitingVotes () external returns (address[] memory airlines) {
+    function getAirlinesAwaitingVotes () external requireIsOperational returns (address[] memory airlines) {
         airlines = airlinesAwaitingVotes;
     }
 

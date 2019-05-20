@@ -47,6 +47,8 @@ contract FlightSuretyData {
     /********************************************************************************************/
     event NewAirlineRegistered(address registrator, address newAirline);
     event AirlinePaidFunding(address airlineAddress);
+    event OperationalDataStateChanged(bool operational);
+
     // event RegisteredFlight(address airline, string flightNumber, uint flightTime, bytes32 flightKey);
 
 
@@ -117,14 +119,13 @@ contract FlightSuretyData {
     *
     * When operational mode is disabled, all write transactions except for this one will fail
     */    
-    function setOperatingStatus
-                            (
-                                bool mode
-                            ) 
-                            external
-                            requireContractOwner 
+
+    function setOperational(bool operating) 
+                            public 
+                            requireContractOwner
     {
-        operational = mode;
+        operational = operating;
+        emit OperationalDataStateChanged(operational);
     }
 
     /********************************************************************************************/
@@ -150,7 +151,7 @@ contract FlightSuretyData {
     {
     }
 
-    function isAirline (address airlineAddress) external returns(bool _valid) {
+    function isAirline (address airlineAddress) external requireIsOperational returns(bool _valid) {
         _valid = airlines[airlineAddress].isRegistered;
     }
 

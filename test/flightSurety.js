@@ -16,6 +16,63 @@ contract('Flight Surety Tests', async (accounts) => {
 /* Operations and Settings                                                              */
 /****************************************************************************************/
 
+describe("Operational status control", () => {
+    it("can get the operational status", async () =>{
+        let statusApp = await config.flightSuretyApp.isOperational.call()
+        assert.isTrue(statusApp, "Operational status App is false")
+        let statusData = await config.flightSuretyData.isOperational.call()
+        assert.isTrue(statusData, "Operational status Data is false")
+    })
+
+    it("functions are working when operational is true", async () => {
+        let resultApp = await config.flightSuretyApp.getAirlinesAwaitingVotes.call()
+        assert.isArray(resultApp, "resultApp is not Array")
+        let resultData = await config.flightSuretyData.isAirline.call(config.firstAirline)
+        assert.isTrue(resultData, "config.firstAirline is not Airline")
+    })
+
+    it("can change to false the operational status", async () => {
+        let appOperational = await config.flightSuretyApp.setOperational(false, {from: config.owner})
+        let dataOperational = await config.flightSuretyData.setOperational(false, {from: config.owner})
+
+        
+        let statusApp = await config.flightSuretyApp.isOperational.call()
+        let statusData = await config.flightSuretyData.isOperational.call()
+        
+        assert.isFalse(statusApp, "Operational status App is false")
+        assert.isFalse(statusData, "Operational status Data is false")
+        truffleAssert.eventEmitted(appOperational, "OperationalAppStateChanged")
+        truffleAssert.eventEmitted(dataOperational, "OperationalDataStateChanged")
+
+    })
+
+    it("functions are not working when operational is false", async () => {
+        await truffleAssert.reverts(config.flightSuretyApp.getAirlinesAwaitingVotes.call(),
+                            "Contract is currently not operational")
+        await truffleAssert.reverts(config.flightSuretyData.isAirline.call(config.firstAirline),
+                            "Contract is currently not operational")
+    })
+
+    it("only the contract owner can change the operating status", async () => {
+        await truffleAssert.reverts(config.flightSuretyApp.setOperational(true, {from: accounts[3]}),
+                            "Caller is not contract owner")
+        await truffleAssert.reverts(config.flightSuretyData.setOperational(true, {from: accounts[3]}),
+                            "Caller is not contract owner")
+    })
+
+    it("can change to true the operational status", async () => {
+        let appOperational = await config.flightSuretyApp.setOperational(true, {from: config.owner})
+        let dataOperational = await config.flightSuretyData.setOperational(true, {from: config.owner})
+        let statusApp = await config.flightSuretyApp.isOperational.call()
+        let statusData = await config.flightSuretyData.isOperational.call()
+        assert.isTrue(statusApp, "Operational status App is false")
+        assert.isTrue(statusData, "Operational status Data is false")
+        truffleAssert.eventEmitted(appOperational, "OperationalAppStateChanged")
+        truffleAssert.eventEmitted(dataOperational, "OperationalDataStateChanged")
+    })
+
+})
+
 describe("Airline registration", () => {
 
     describe("Registering new Airlines", () => {
@@ -311,13 +368,13 @@ describe("Initial flightSurety tests", ()=>{
                 
       });
     
-      it(`(multiparty) can allow access to setOperatingStatus() for Contract Owner account`, async function () {
+      it(`(multiparty) can allow access to setOperational() for Contract Owner account`, async function () {
     
           // Ensure that access is allowed for Contract Owner account
           let accessDenied = false;
           try 
           {
-              await config.flightSuretyData.setOperatingStatus(false);
+              await config.flightSuretyData.setOperational(false);
           }
           catch(e) {
               accessDenied = true;
@@ -328,7 +385,7 @@ describe("Initial flightSurety tests", ()=>{
     
       it(`(multiparty) can block access to functions using requireIsOperational when operating status is false`, async function () {
     
-          await config.flightSuretyData.setOperatingStatus(false);
+          await config.flightSuretyData.setOperational(false);
     
           let reverted = false;
           try 
@@ -341,7 +398,7 @@ describe("Initial flightSurety tests", ()=>{
           assert.equal(reverted, true, "Access not blocked for requireIsOperational");      
     
           // Set it back for other tests to work
-          await config.flightSuretyData.setOperatingStatus(true);
+          await config.flightSuretyData.setOperational(true);
     
       });
   })
