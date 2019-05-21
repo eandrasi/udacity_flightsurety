@@ -61,6 +61,7 @@ contract FlightSuretyApp {
     event FlightRegistered(address airline, string flightNumber, uint flightTime);
     event InsuranceBought(address insured, bytes32 flightKey, uint amount);
     event OperationalAppStateChanged(bool operational);
+    event AirlinePaidFunding(address airlineAddress);
  
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -114,6 +115,17 @@ contract FlightSuretyApp {
         _;
     }
 
+    modifier enoughFund() {
+        require(msg.value > (10 ether), "You must pay minimum 10 ether for funding");
+        _;
+    }
+
+    modifier operationalAirline() {
+        bool isOpAirline = flightSuretyData.isAirlineOperational(msg.sender);
+        require(isOpAirline, "The Airline must be operational to perform these actions");
+        _;
+    }
+
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
     /********************************************************************************************/
@@ -151,7 +163,7 @@ contract FlightSuretyApp {
     function registerAirline (address newAirline)
                 external
                 requireIsOperational
-                // registeredAirline
+                operationalAirline
                 registrationPaid
                 returns(bool success, uint256 votes)
         {
@@ -193,7 +205,7 @@ contract FlightSuretyApp {
         airlines = airlinesAwaitingVotes;
     }
 
-    function getVotesOnNewRegistration(address newAirline) external returns(address[] memory votes) {
+    function getVotesOnNewRegistration(address newAirline) external requireIsOperational returns(address[] memory votes) {
         votes = votesOnNewRegistration[newAirline];
     }
 
@@ -203,14 +215,15 @@ contract FlightSuretyApp {
 
     function payFunding() external
                 // airlineRegistered
-                // enoughFund
-                // requireIsOperational
+                enoughFund
+                requireIsOperational
                 payable
                 {
                     flightSuretyData.payFunding.value(msg.value)(msg.sender);
+                    emit AirlinePaidFunding(msg.sender);
                 }
 
-    function registerFlight(address airline, string flightNumber, uint flightTime) external requireIsOperational // registeredAirline
+    function registerFlight(address airline, string flightNumber, uint flightTime) external requireIsOperational operationalAirline
     {
         flightSuretyData.registerFlight(airline, flightNumber, flightTime);
         emit FlightRegistered(airline, flightNumber, flightTime);
@@ -253,6 +266,7 @@ contract FlightSuretyApp {
                             uint256 timestamp                            
                         )
                         external
+                        requireIsOperational
     {
         uint8 index = getRandomIndex(msg.sender);
 

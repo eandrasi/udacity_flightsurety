@@ -12,7 +12,7 @@ contract FlightSuretyData {
     address private contractOwner;                                      // Account used to deploy contract
     bool private operational = true;                                    // Blocks all state changes throughout the contract if false
 
-    mapping(address => bool) private authorizedCallers;
+    // mapping(address => bool) private authorizedCallers;
 
     struct Airline {
         bool isRegistered;
@@ -46,7 +46,7 @@ contract FlightSuretyData {
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
     event NewAirlineRegistered(address registrator, address newAirline);
-    event AirlinePaidFunding(address airlineAddress);
+    // event DataAirlinePaidFunding(address airlineAddress);
     event OperationalDataStateChanged(bool operational);
 
     // event RegisteredFlight(address airline, string flightNumber, uint flightTime, bytes32 flightKey);
@@ -91,10 +91,10 @@ contract FlightSuretyData {
         _;
     }
 
-    modifier authorizedCallersOnly() {
-        require(authorizedCallers[msg.sender] == true, "This address has not been authorized yet");
-        _;
-    }
+    // modifier authorizedCallersOnly() {
+    //     require(authorizedCallers[msg.sender] == true, "This address has not been authorized yet");
+    //     _;
+    // }
 
     /********************************************************************************************/
     /*                                       UTILITY FUNCTIONS                                  */
@@ -112,7 +112,6 @@ contract FlightSuretyData {
     {
         return operational;
     }
-
 
     /**
     * @dev Sets contract operations on/off
@@ -133,14 +132,14 @@ contract FlightSuretyData {
     /********************************************************************************************/
     function payFunding(address fundingAddress) 
                 public
-                // requireIsOperational
-                // callerAuthoriyed
+                requireIsOperational
                 payable
                 {
                     airlines[fundingAddress].hasPaid = true;
                     operationalAirlinesCount++;
                     operationalAirlines[fundingAddress] = true;
-                    emit AirlinePaidFunding(fundingAddress);
+                    // authorizedCallers[fundingAddress] = true;
+                    // emit DataAirlinePaidFunding(fundingAddress);
                 }
 
     function authorizeCaller
@@ -214,13 +213,14 @@ contract FlightSuretyData {
     */   
     function buyInsurance (address insured, bytes32 flightKey, uint amount)
                             external
+                            requireIsOperational
                             payable
                             {
                                 Insurance memory newInsurance = Insurance(insured, amount, 0);
                                 insurances[flightKey].push(newInsurance);
                             }
                         
-    function getInsuranceForIndex(bytes32 flightKey, uint index) external returns (address insured, uint amountPaid, uint balance) {
+    function getInsuranceForIndex(bytes32 flightKey, uint index) external requireIsOperational returns (address insured, uint amountPaid, uint balance) {
         insured = insurances[flightKey][index].insured;
         amountPaid = insurances[flightKey][index].amountPaid;
         balance = insurances[flightKey][index].balance;
