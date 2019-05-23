@@ -278,13 +278,13 @@ describe("Passengers Tests", () => {
         let falseFlightKey = await config.flightSuretyData.getFlightKey.call(config.firstAirline, "123456789", 1234567)
 
         let passenger1 = accounts[11]
-        let ammount = web3.toWei('0.2345', 'ether')
+        let amount = web3.toWei('0.2345', 'ether')
         
-        let exisitingFlight = await config.flightSuretyApp.buyInsurance(flightKeyOk, {from: passenger1, value: ammount})
-        await truffleAssert.eventEmitted(exisitingFlight, 'InsuranceBought') 
+        let existingFlight = await config.flightSuretyApp.buyInsurance(flightKeyOk, {from: passenger1, value: amount})
+        await truffleAssert.eventEmitted(existingFlight, 'InsuranceBought') 
         
         await truffleAssert.fails(
-            config.flightSuretyApp.buyInsurance(falseFlightKey, {from: passenger1, value: ammount}), 
+            config.flightSuretyApp.buyInsurance(falseFlightKey, {from: passenger1, value: amount}), 
             truffleAssert.ErrorType.REVERT, "The flightKey does not exist"
         )
     })
@@ -292,13 +292,13 @@ describe("Passengers Tests", () => {
     it("can view all insurances bought for a specific flight", async () => {
         let insurances = []
         let flightKey1 = flights[0][0]
-        let ammount1 = web3.toWei('0.1111', 'ether')
-        let ammount2 = web3.toWei('0.2222', 'ether')
+        let amount1 = web3.toWei('0.1111', 'ether')
+        let amount2 = web3.toWei('0.2222', 'ether')
         let passenger1 = accounts[12]
         let passenger2 = accounts[13]
 
-        await config.flightSuretyApp.buyInsurance(flightKey1, {from: passenger1, value: ammount1})
-        await config.flightSuretyApp.buyInsurance(flightKey1, {from: passenger2, value: ammount2})
+        await config.flightSuretyApp.buyInsurance(flightKey1, {from: passenger1, value: amount1})
+        await config.flightSuretyApp.buyInsurance(flightKey1, {from: passenger2, value: amount2})
         
         let insurancesSize = await config.flightSuretyData.insurancesSize.call(flightKey1)
 
@@ -317,40 +317,34 @@ describe("Passengers Tests", () => {
     
     it("can't buy insurance for old flights", async () => {
         let flightKeyOld = flights[3][0]
-        let ammount = web3.toWei('0.2345', 'ether')
+        let amount = web3.toWei('0.2345', 'ether')
         let passenger1 = accounts[12]
         await truffleAssert.fails(
-            config.flightSuretyApp.buyInsurance(flightKeyOld, {from: passenger1, value: ammount}), 
+            config.flightSuretyApp.buyInsurance(flightKeyOld, {from: passenger1, value: amount}), 
             truffleAssert.ErrorType.REVERT, 
             "The flight is too old"
             )
     })
 
-    it("can buy insurance for max ammount of 1 eth", async () => {
+    it("can buy insurance for max amount of 1 eth", async () => {
         let flightKey1 = flights[0][0]
-        let ammountTooHigh = web3.toWei('5.2', 'ether')
+        let amountTooHigh = web3.toWei('5.2', 'ether')
         let passenger3 = accounts[14]
         await truffleAssert.fails(
-            config.flightSuretyApp.buyInsurance(flightKey1, {from: passenger3, value: ammountTooHigh}), 
+            config.flightSuretyApp.buyInsurance(flightKey1, {from: passenger3, value: amountTooHigh}), 
             truffleAssert.ErrorType.REVERT, 
-            "Maximum admited value oversteped"
+            "Maximum admitted value overstepped"
             )
     })
     
-    it("can receive credit when flight is delayed", async () => {
-        // credit received when flight delayed
-        // credit not received when flight on time
-    })
+    // it("can receive credit when flight is delayed", async () => {
+    //     // credit received when flight delayed
+    //     // credit not received when flight on time
+    // })
 
-    it("can withdraw funds owed from insurance payout", async () => {
-        // true for flight delayed
-    })
-
-
-
-    it("", async () => {})
-
-    it("", async () => {})
+    // it("can withdraw funds owed from insurance payout", async () => {
+    //     // true for flight delayed
+    // })
 })
 
 

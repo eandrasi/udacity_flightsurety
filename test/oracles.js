@@ -22,9 +22,17 @@ contract('Oracles', async (accounts) => {
     const STATUS_CODE_LATE_WEATHER = 30;
     const STATUS_CODE_LATE_TECHNICAL = 40;
     const STATUS_CODE_LATE_OTHER = 50;
-
+    
     let flightNumber = 'ND1309'; // Course number
-    let flightTime = Math.floor(Date.now() / 1000);
+    let flightTime = Math.floor(Date.now() / 1000) + 10000
+    let flightNumberLate = 'ND1313'; // Course number
+    
+    let passengerOnTime = accounts[31]
+    let passengerLate = accounts[32]
+    let amount = web3.toWei('0.5555', 'ether')
+
+    let flightKeyOk
+    let flightKeyLate
 
     it('can register oracles', async () => {
     
@@ -42,17 +50,30 @@ contract('Oracles', async (accounts) => {
     it("can register a flight", async () => {
       let fundingValue = web3.toWei('10.1', 'ether')
       await config.flightSuretyApp.payFunding({from: config.firstAirline, value: fundingValue})
-      let result = await config.flightSuretyApp.registerFlight(config.firstAirline, flightNumber, flightTime, {from: config.firstAirline})
-      truffleAssert.eventEmitted(result, 'FlightRegistered')
+      let resultOnTime = await config.flightSuretyApp.registerFlight(config.firstAirline, flightNumber, flightTime, {from: config.firstAirline})
+      let resultLate = await config.flightSuretyApp.registerFlight(config.firstAirline, flightNumberLate, flightTime, {from: config.firstAirline})
+      truffleAssert.eventEmitted(resultOnTime, 'FlightRegistered')
+      truffleAssert.eventEmitted(resultLate, 'FlightRegistered')
+    })
+
+    it("passengers can buy insurance", async () => {
+      flightKeyOk   = await config.flightSuretyData.getFlightKey.call(config.firstAirline, flightNumber, flightTime)
+      flightKeyLate = await config.flightSuretyData.getFlightKey.call(config.firstAirline, flightNumberLate, flightTime)
+
+      
+      let insuranceOnFlightOk = await config.flightSuretyApp.buyInsurance(flightKeyOk, {from: passengerOnTime, value: amount})
+      let insuranceOnFlightLate = await config.flightSuretyApp.buyInsurance(flightKeyLate, {from: passengerLate, value: amount})
+      await truffleAssert.eventEmitted(insuranceOnFlightOk, 'InsuranceBought') 
+      await truffleAssert.eventEmitted(insuranceOnFlightLate, 'InsuranceBought') 
     })
   
-    it('can request flight status', async () => {  
+    xit('can request flight status, Oracles submit responses', async () => {  
       // Submit a request for oracles to get status information for a flight
       let result = await config.flightSuretyApp.fetchFlightStatus(config.firstAirline, flightNumber, flightTime);
       let index = result.logs[0].args.index.toNumber()
-      console.log(index)
       truffleAssert.eventEmitted(result, "OracleRequest")
-      truffleAssert.prettyPrintEmittedEvents(result, 2)
+      // console.log(index)
+      // truffleAssert.prettyPrintEmittedEvents(result, 2)
 
 
       // Since the Index assigned to each test account is opaque by design
@@ -64,27 +85,72 @@ contract('Oracles', async (accounts) => {
         // Get oracle information
         let oracleIndexes = await config.flightSuretyApp.getMyIndexes.call({ from: accounts[a]});
         // console.log(`oracleIndexes: ${oracleIndexes}`)
-
+        
         for(let idx=0;idx<3;idx++) {
-  
+          
           try {
             // Submit a response...it will only be accepted if there is an Index match
-            truffleAssert.prettyPrintEmittedEvents(await config.flightSuretyApp.submitOracleResponse(oracleIndexes[idx], config.firstAirline, flightNumber, flightTime, STATUS_CODE_ON_TIME, { from: accounts[a] }), 2)
-            // truffleAssert.prettyPrintEmittedEvents(a, 2)
+            // truffleAssert.prettyPrintEmittedEvents(await config.flightSuretyApp.submitOracleResponse(oracleIndexes[idx], 
+            //                 config.firstAirline, flightNumber, flightTime, STATUS_CODE_ON_TIME, { from: accounts[a] }), 2)
+            let flightOnTime = await config.flightSuretyApp.submitOracleResponse(oracleIndexes[idx], config.firstAirline, flightNumber, 
+              flightTime, STATUS_CODE_ON_TIME, { from: accounts[a] })
+              
+              truffleAssert.eventEmitted(flightOnTime, "OracleReport")
+            }
+            catch(e) {
+              // Enable this when debugging
+              console.log('\nError', idx, oracleIndexes[idx].toNumber(), flightNumber, flightTime);
+              console.log(e)
+            }
+            
           }
-          catch(e) {
-            // Enable this when debugging
-             console.log('\nError', idx, oracleIndexes[idx].toNumber(), flightNumber, flightTime);
-             console.log(e)
-          }
-  
-        }
-      }
-  
-  
+        }  
     })
 
-    
+    xit("can request flight status and receive oracle responses for LATE_AIRLINE", async () => {
+      await config.flightSuretyApp.fetchFlightStatus(config.firstAirline, flightNumberLate, flightTime)
+
+      for(let a=1; a<TEST_ORACLES_COUNT; a++) {
+        let oracleIndexes = await config.flightSuretyApp.getMyIndexes.call({ from: accounts[a]})
+
+        for(let idx=0;idx<3;idx++) {
+          try {
+            let flightLateAirline = await config.flightSuretyApp.submitOracleResponse(oracleIndexes[idx], config.firstAirline, flightNumberLate, 
+              flightTime, STATUS_CODE_LATE_AIRLINE, { from: accounts[a] })    
+              truffleAssert.eventEmitted(flightLateAirline, "OracleReport")
+            }
+            catch(e) {
+              // Enable this when debugging
+              console.log('\nError', idx, oracleIndexes[idx].toNumber(), flightNumber, flightTime);
+              console.log(e)
+            }
+            
+          }
+        }
+
+    })
+
+    it("can read the insurance information", async () => {
+      let insurancesSize = await config.flightSuretyData.insurancesSize.call(flightKeyOk)
+      let insurances = []
+
+      for(i = 0; i < insurancesSize; i++){
+          let insurance = await config.flightSuretyData.getInsuranceForIndex.call(flightKeyOk, i)
+          insurances.push(insurance)
+      }
+      assert.equal(insurances[0][0], passengerOnTime, "The passenger that bought the insurance is not the insured one")
+      assert.equal(insurances[0][1], amount, "The amount is not the same")
+      assert.equal(insurances[0][2].toNumber(), 0, "The balance should be 0")
+    })
+
+    it("passengers insured on the LATE_AIRLINE flight have their accounts credited with the amount", async () => {
+
+    })
+
+    it("passengers insured on the LATE_AIRLINE can withdraw the insurance payout", async () => {
+
+    })
+
   })
 
 

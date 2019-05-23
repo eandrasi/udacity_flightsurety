@@ -111,7 +111,7 @@ contract FlightSuretyApp {
     }
 
     modifier checkValueForMaxAmount() {
-        require(msg.value < (1 ether), "Maximum admited value oversteped");
+        require(msg.value < (1 ether), "Maximum admitted value overstepped");
         _;
     }
 
