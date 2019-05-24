@@ -49,6 +49,7 @@ contract FlightSuretyData {
     // event DataAirlinePaidFunding(address airlineAddress);
     event OperationalDataStateChanged(bool operational);
     event InsuranceCredited(address insured,uint balance);
+    event InsuranceHasBeenPaid(bytes32 flightKey, address insuredClient, uint amount);
 
     // event RegisteredFlight(address airline, string flightNumber, uint flightTime, bytes32 flightKey);
 
@@ -237,28 +238,37 @@ contract FlightSuretyData {
         emit InsuranceCredited(insured, balance);
     }
 
-    /**
-     *  @dev Credits payouts to insurees
-    */
-    function creditInsurees
-                                (
-                                )
-                                external
-                                pure
-    {
-    }
+    // /**
+    //  *  @dev Credits payouts to insurees
+    // */
+    // function creditInsurees
+    //                             (
+    //                             )
+    //                             external
+    //                             pure
+    // {
+    // }
     
 
     /**
      *  @dev Transfers eligible payout funds to insuree
      *
     */
-    function pay
-                            (
-                            )
-                            external
-                            pure
-    {
+    function pay(bytes32 flightKey, address insuredClient) external requireIsOperational {
+
+        // loop through insurances for this flight key
+        uint size = insurancesSize(flightKey);
+
+        for(uint i = 0; i < size; i++) {
+        //if you find an insurance with insured as the insured property same as the caller
+            if(insurances[flightKey][i].insured == insuredClient) {
+                uint amountToWithdraw = insurances[flightKey][i].balance;
+                insurances[flightKey][i].balance = 0;
+                insuredClient.transfer(amountToWithdraw);
+                emit InsuranceHasBeenPaid(flightKey, insuredClient, amountToWithdraw);
+            }
+
+        }
     }
 
    /**

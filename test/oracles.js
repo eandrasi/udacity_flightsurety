@@ -15,7 +15,7 @@ contract('Oracles', async (accounts) => {
     
   });
   
-  describe.only("Initial Oracles tests", ()=>{
+  describe("Initial Oracles tests", ()=>{
     const STATUS_CODE_UNKNOWN = 0;
     const STATUS_CODE_ON_TIME = 10;
     const STATUS_CODE_LATE_AIRLINE = 20;
@@ -67,7 +67,7 @@ contract('Oracles', async (accounts) => {
       await truffleAssert.eventEmitted(insuranceOnFlightLate, 'InsuranceBought') 
     })
   
-    xit('can request flight status, Oracles submit responses', async () => {  
+    it('can request flight status, Oracles submit responses', async () => {  
       // Submit a request for oracles to get status information for a flight
       let result = await config.flightSuretyApp.fetchFlightStatus(config.firstAirline, flightNumber, flightTime);
       let index = result.logs[0].args.index.toNumber()
@@ -163,7 +163,19 @@ contract('Oracles', async (accounts) => {
     })
 
     it("passengers insured on the LATE_AIRLINE can withdraw the insurance payout", async () => {
-      
+      let initialBalance = await web3.eth.getBalance(passengerLate)
+      // console.log(`InitialBalance: ${initialBalance}`)
+      // console.log(`Account: ${passengerLate}`)
+
+      let a = await config.flightSuretyApp.withdraw(flightKeyLate, {from: passengerLate})
+
+      // truffleAssert.prettyPrintEmittedEvents(a)
+
+      let finalBalance = await web3.eth.getBalance(passengerLate)
+      // console.log(`finalBalance: ${finalBalance}`)
+      // console.log(`Diference: ${finalBalance - initialBalance}`)
+      assert.isTrue(finalBalance > initialBalance, "Funds have not been transferred")
+
     })
 
   })

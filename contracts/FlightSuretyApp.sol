@@ -23,6 +23,7 @@ contract FlightSuretyData {
     function getInsuranceForIndex(bytes32 flightKey, uint index) external
             returns (address insured, uint amountPaid, uint balance);
     function setBalanceForInsurance(bytes32 flightKey, uint index, uint balance) external;
+    function pay(bytes32 flightKey, address insuredClient) external;
 }
 
 
@@ -346,6 +347,8 @@ contract FlightSuretyApp {
     // they fetch data and submit a response
     event OracleRequest(uint8 index, address airline, string flight, uint256 timestamp);
 
+    event WithdrawRequested(bytes32 flightKey, address insuredCLient );
+
 
     // Register an oracle with the contract
     function registerOracle
@@ -377,7 +380,13 @@ contract FlightSuretyApp {
         return oracles[msg.sender].indexes;
     }
 
-
+    function withdraw(bytes32 flightKey)
+    external
+    requireIsOperational
+    {
+        flightSuretyData.pay(flightKey, msg.sender);
+        emit WithdrawRequested(flightKey, msg.sender);
+    }
 
 
     // Called by oracle when a response is available to an outstanding request
