@@ -29,7 +29,7 @@ contract('Oracles', async (accounts) => {
     
     let passengerOnTime = accounts[31]
     let passengerLate = accounts[32]
-    let amount = web3.toWei('0.5555', 'ether')
+    let amount = web3.toWei('0.100', 'ether')
 
     let flightKeyOk
     let flightKeyLate
@@ -107,7 +107,7 @@ contract('Oracles', async (accounts) => {
         }  
     })
 
-    xit("can request flight status and receive oracle responses for LATE_AIRLINE", async () => {
+    it("can request flight status and receive oracle responses for LATE_AIRLINE", async () => {
       await config.flightSuretyApp.fetchFlightStatus(config.firstAirline, flightNumberLate, flightTime)
 
       for(let a=1; a<TEST_ORACLES_COUNT; a++) {
@@ -118,6 +118,7 @@ contract('Oracles', async (accounts) => {
             let flightLateAirline = await config.flightSuretyApp.submitOracleResponse(oracleIndexes[idx], config.firstAirline, flightNumberLate, 
               flightTime, STATUS_CODE_LATE_AIRLINE, { from: accounts[a] })    
               truffleAssert.eventEmitted(flightLateAirline, "OracleReport")
+              truffleAssert.prettyPrintEmittedEvents(flightLateAirline, 2)
             }
             catch(e) {
               // Enable this when debugging
@@ -143,12 +144,26 @@ contract('Oracles', async (accounts) => {
       assert.equal(insurances[0][2].toNumber(), 0, "The balance should be 0")
     })
 
-    it("passengers insured on the LATE_AIRLINE flight have their accounts credited with the amount", async () => {
-
+    it("passengers insured on the LATE_AIRLINE flight have their accounts credited with the amount*1.5", async () => {
+      let insurance = await config.flightSuretyData.getInsuranceForIndex.call(flightKeyLate, 0)
+      // console.log(flightKeyLate)
+      let expectedBalance = web3.toWei('0.150', 'ether')
+      assert.equal(insurance[0], passengerLate, "The account is not of the insured passenger")
+      assert.equal(insurance[1], amount, "The amount insured is incorrect")
+      assert.equal(insurance[2].toNumber(), expectedBalance, "The balance is incorrect")
+      
+      // let insurancesSize = await config.flightSuretyData.insurancesSize.call(flightKeyLate)
+      // let insurances = []
+      // let insuredPassenger
+      
+      // for(i = 0; i < insurancesSize; i++){
+        //     console.log(`Insurance: ${insurance}`)
+        //     insurances.push(insurance)
+        // }
     })
 
     it("passengers insured on the LATE_AIRLINE can withdraw the insurance payout", async () => {
-
+      
     })
 
   })

@@ -34,7 +34,7 @@ contract FlightSuretyData {
 
     mapping(address => Airline) public airlines;
     mapping(bytes32 => Flight) public flights;
-    mapping(bytes32 => Insurance[]) public insurances;
+    mapping(bytes32 => Insurance[]) public insurances;  //must restrict access modifier
     
     bytes32[] public flightKeys;
 
@@ -48,6 +48,7 @@ contract FlightSuretyData {
     event NewAirlineRegistered(address registrator, address newAirline);
     // event DataAirlinePaidFunding(address airlineAddress);
     event OperationalDataStateChanged(bool operational);
+    event InsuranceCredited(address insured,uint balance);
 
     // event RegisteredFlight(address airline, string flightNumber, uint flightTime, bytes32 flightKey);
 
@@ -228,6 +229,12 @@ contract FlightSuretyData {
 
     function insurancesSize (bytes32 flightKey) public returns (uint size) {
         size = insurances[flightKey].length;
+    }
+
+    function setBalanceForInsurance(bytes32 flightKey, uint index, uint balance) external requireIsOperational {
+        insurances[flightKey][index].balance = balance;
+        address insured = insurances[flightKey][index].insured;
+        emit InsuranceCredited(insured, balance);
     }
 
     /**

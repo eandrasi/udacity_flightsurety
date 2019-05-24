@@ -19,6 +19,10 @@ contract FlightSuretyData {
     function getFlightTime(bytes32 flightKey) public returns(uint flightTime);
     function getFlight(bytes32 _flightKey) public returns 
         (bytes32 flightKey, address airline, string flightNumber, uint flightTime);
+    function insurancesSize (bytes32 flightKey) public returns (uint size);
+    function getInsuranceForIndex(bytes32 flightKey, uint index) external
+            returns (address insured, uint amountPaid, uint balance);
+    function setBalanceForInsurance(bytes32 flightKey, uint index, uint balance) external;
 }
 
 
@@ -62,6 +66,8 @@ contract FlightSuretyApp {
     event InsuranceBought(address insured, bytes32 flightKey, uint amount);
     event OperationalAppStateChanged(bool operational);
     event AirlinePaidFunding(address airlineAddress);
+    event FlightProcessed(string flight, uint8 statusCode);
+    event FlightKey(bytes32 flightKey);
  
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -245,16 +251,31 @@ contract FlightSuretyApp {
     * @dev Called after oracle has updated flight status
     *
     */  
-    function processFlightStatus
-                                (
-                                    address airline,
-                                    string memory flight,
-                                    uint256 timestamp,
-                                    uint8 statusCode
-                                )
-                                internal
-                                pure
+    function processFlightStatus(address airline, string memory flight, uint256 timestamp, uint8 statusCode) internal requireIsOperational
     {
+        if(statusCode == STATUS_CODE_LATE_AIRLINE) {
+            // find all insurances for that flight
+            bytes32 flightKey = keccak256(abi.encodePacked(airline, flight, timestamp));
+            emit FlightKey(flightKey);
+            uint insurancesSize = flightSuretyData.insurancesSize(flightKey);
+            //  loop through them and multiply the amount with 1.5
+            for(uint i = 0; i < insurancesSize; i++){
+                (address insured, uint amountPaid, uint balance) = flightSuretyData.getInsuranceForIndex(flightKey, i);
+                balance = amountPaid.mul(15).div(10);
+                // newBalance = newBalance.div(10);
+                // uint newBalance = (0.15 ether);
+                flightSuretyData.setBalanceForInsurance(flightKey, i, balance);
+                // flightSuretyData.setBalanceForInsurance(flightKey, i, 56789);
+            }
+
+            // credit their balance with the result
+        }
+
+        // bytes32 flightKey = keccak256(abi.encodePacked(airline, flight, timestamp));
+        // flightSuretyData.setBalanceForInsurance(flightKey, 0, 450);
+
+
+        emit FlightProcessed(flight, statusCode);
     }
 
 
