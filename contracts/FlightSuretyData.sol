@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity >=0.4.21 <0.6.0;
 
 import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
 
@@ -35,7 +35,7 @@ contract FlightSuretyData {
     mapping(address => Airline) public airlines;
     mapping(bytes32 => Flight) public flights;
     mapping(bytes32 => Insurance[]) public insurances;  //must restrict access modifier
-    
+
     bytes32[] public flightKeys;
 
     uint public countAirlines;
@@ -75,10 +75,10 @@ contract FlightSuretyData {
 
     /**
     * @dev Modifier that requires the "operational" boolean variable to be "true"
-    *      This is used on all state changing functions to pause the contract in 
+    *      This is used on all state changing functions to pause the contract in
     *      the event there is an issue that needs to be fixed
     */
-    modifier requireIsOperational() 
+    modifier requireIsOperational()
     {
         require(operational, "Contract is currently not operational");
         _;  // All modifiers require an "_" which indicates where the function body will be added
@@ -106,11 +106,11 @@ contract FlightSuretyData {
     * @dev Get operating status of contract
     *
     * @return A bool that is the current operating status
-    */      
-    function isOperational() 
-                            public 
-                            view 
-                            returns(bool) 
+    */
+    function isOperational()
+                            public
+                            view
+                            returns(bool)
     {
         return operational;
     }
@@ -119,10 +119,10 @@ contract FlightSuretyData {
     * @dev Sets contract operations on/off
     *
     * When operational mode is disabled, all write transactions except for this one will fail
-    */    
+    */
 
-    function setOperational(bool operating) 
-                            public 
+    function setOperational(bool operating)
+                            public
                             requireContractOwner
     {
         operational = operating;
@@ -132,7 +132,7 @@ contract FlightSuretyData {
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
-    function payFunding(address fundingAddress) 
+    function payFunding(address fundingAddress)
                 public
                 requireIsOperational
                 payable
@@ -145,12 +145,11 @@ contract FlightSuretyData {
                 }
 
     function authorizeCaller
-                            ( address _address  
+                            ( address _address
                             )
                             external
                             pure
-    {
-    }
+    {}
 
     function isAirline (address airlineAddress) external requireIsOperational returns(bool _valid) {
         _valid = airlines[airlineAddress].isRegistered;
@@ -168,7 +167,7 @@ contract FlightSuretyData {
     * @dev Add an airline to the registration queue
     *      Can only be called from FlightSuretyApp contract
     *
-    */   
+    */
     function registerAirline
                             (   address newAirline,
                                 address registrator
@@ -182,7 +181,8 @@ contract FlightSuretyData {
         emit NewAirlineRegistered(registrator, newAirline);
     }
 
-    function registerFlight(address airline, string flightNumber, uint flightTime) external requireIsOperational /*requireCallerAuthorized*/ {
+    function registerFlight(address airline, string calldata flightNumber, uint flightTime)
+    external requireIsOperational /*requireCallerAuthorized*/ {
         // bytes32 flightKey = keccak256(abi.encodePacked(flightNumber, flightTime));
         bytes32 flightKey = getFlightKey(airline, flightNumber, flightTime);
         Flight memory newFlight = Flight(flightKey, airline, flightNumber, flightTime);
@@ -200,8 +200,8 @@ contract FlightSuretyData {
         flightTime = flights[flightKey].flightTime;
     }
 
-    function getFlight(bytes32 _flightKey) public returns 
-        (bytes32 flightKey, address airline, string flightNumber, uint flightTime) 
+    function getFlight(bytes32 _flightKey) public returns
+        (bytes32 flightKey, address airline, string memory flightNumber, uint flightTime)
         {
             flightKey = flights[_flightKey].flightKey;
             airline = flights[_flightKey].airline;
@@ -212,7 +212,7 @@ contract FlightSuretyData {
    /**
     * @dev Buy insurance for a flight
     *
-    */   
+    */
     function buyInsurance (address insured, bytes32 flightKey, uint amount)
                             external
                             requireIsOperational
@@ -221,8 +221,8 @@ contract FlightSuretyData {
                                 Insurance memory newInsurance = Insurance(insured, amount, 0);
                                 insurances[flightKey].push(newInsurance);
                             }
-                        
-    function getInsuranceForIndex(bytes32 flightKey, uint index) external requireIsOperational returns (address insured, uint amountPaid, uint balance) {
+    function getInsuranceForIndex(bytes32 flightKey, uint index) external requireIsOperational
+     returns (address insured, uint amountPaid, uint balance) {
         insured = insurances[flightKey][index].insured;
         amountPaid = insurances[flightKey][index].amountPaid;
         balance = insurances[flightKey][index].balance;
@@ -248,13 +248,12 @@ contract FlightSuretyData {
     //                             pure
     // {
     // }
-    
 
     /**
      *  @dev Transfers eligible payout funds to insuree
      *
     */
-    function pay(bytes32 flightKey, address insuredClient) external requireIsOperational {
+    function pay(bytes32 flightKey, address payable insuredClient) external requireIsOperational {
 
         // loop through insurances for this flight key
         uint size = insurancesSize(flightKey);
@@ -275,9 +274,9 @@ contract FlightSuretyData {
     * @dev Initial funding for the insurance. Unless there are too many delayed flights
     *      resulting in insurance payouts, the contract should be self-sustaining
     *
-    */   
+    */
     function fund
-                            (   
+                            (
                             )
                             public
                             payable
@@ -290,9 +289,9 @@ contract FlightSuretyData {
                             string memory flight,
                             uint256 timestamp
                         )
-                        pure
                         public
-                        returns(bytes32) 
+                        pure
+                        returns(bytes32)
     {
         return keccak256(abi.encodePacked(airline, flight, timestamp));
     }
@@ -301,9 +300,9 @@ contract FlightSuretyData {
     * @dev Fallback function for funding smart contract.
     *
     */
-    function() 
-                            external 
-                            payable 
+    function()
+                            external
+                            payable
     {
         fund();
     }

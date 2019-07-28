@@ -1,6 +1,6 @@
 
 var Test = require('../config/testConfig.js');
-//var BigNumber = require('bignumber.js');
+var BigNumber = require('bignumber.js');
 const truffleAssert = require('truffle-assertions');
 
 
@@ -29,7 +29,7 @@ contract('Oracles', async (accounts) => {
     
     let passengerOnTime = accounts[31]
     let passengerLate = accounts[32]
-    let amount = web3.toWei('0.100', 'ether')
+    let amount = web3.utils.toWei('0.100', 'ether')
 
     let flightKeyOk
     let flightKeyLate
@@ -48,7 +48,7 @@ contract('Oracles', async (accounts) => {
     });
 
     it("can register a flight", async () => {
-      let fundingValue = web3.toWei('10.1', 'ether')
+      let fundingValue = web3.utils.toWei('10.1', 'ether')
       await config.flightSuretyApp.payFunding({from: config.firstAirline, value: fundingValue})
       let resultOnTime = await config.flightSuretyApp.registerFlight(config.firstAirline, flightNumber, flightTime, {from: config.firstAirline})
       let resultLate = await config.flightSuretyApp.registerFlight(config.firstAirline, flightNumberLate, flightTime, {from: config.firstAirline})
@@ -99,8 +99,8 @@ contract('Oracles', async (accounts) => {
             }
             catch(e) {
               // Enable this when debugging
-              console.log('\nError', idx, oracleIndexes[idx].toNumber(), flightNumber, flightTime);
-              console.log(e)
+              // console.log('\nError', idx, oracleIndexes[idx].toNumber(), flightNumber, flightTime);
+              // console.log(e)
             }
             
           }
@@ -122,8 +122,8 @@ contract('Oracles', async (accounts) => {
             }
             catch(e) {
               // Enable this when debugging
-              console.log('\nError', idx, oracleIndexes[idx].toNumber(), flightNumber, flightTime);
-              console.log(e)
+              // console.log('\nError', idx, oracleIndexes[idx].toNumber(), flightNumber, flightTime);
+              // console.log(e)
             }
             
           }
@@ -141,16 +141,17 @@ contract('Oracles', async (accounts) => {
       }
       assert.equal(insurances[0][0], passengerOnTime, "The passenger that bought the insurance is not the insured one")
       assert.equal(insurances[0][1], amount, "The amount is not the same")
-      assert.equal(insurances[0][2].toNumber(), 0, "The balance should be 0")
+      // console.log(BigNumber(insurances[0][2]).toFixed())
+      assert.equal(BigNumber(insurances[0][2]).toFixed(), 0, "The balance should be 0")
     })
 
     it("passengers insured on the LATE_AIRLINE flight have their accounts credited with the amount*1.5", async () => {
       let insurance = await config.flightSuretyData.getInsuranceForIndex.call(flightKeyLate, 0)
       // console.log(flightKeyLate)
-      let expectedBalance = web3.toWei('0.150', 'ether')
+      let expectedBalance = web3.utils.toWei('0.150', 'ether')
       assert.equal(insurance[0], passengerLate, "The account is not of the insured passenger")
       assert.equal(insurance[1], amount, "The amount insured is incorrect")
-      assert.equal(insurance[2].toNumber(), expectedBalance, "The balance is incorrect")
+      assert.equal(BigNumber(insurance[2]).toFixed(), expectedBalance, "The balance is incorrect")
       
       // let insurancesSize = await config.flightSuretyData.insurancesSize.call(flightKeyLate)
       // let insurances = []
@@ -174,7 +175,11 @@ contract('Oracles', async (accounts) => {
       let finalBalance = await web3.eth.getBalance(passengerLate)
       // console.log(`finalBalance: ${finalBalance}`)
       // console.log(`Diference: ${finalBalance - initialBalance}`)
-      assert.isTrue(finalBalance > initialBalance, "Funds have not been transferred")
+      // console.log(finalBalance)
+      // console.log(initialBalance)
+      // console.log(BigNumber(finalBalance).toNumber())
+      // console.log(BigNumber(initialBalance).toNumber())
+      assert.isTrue(BigNumber(finalBalance).toNumber() > BigNumber(initialBalance).toNumber(), "Funds have not been transferred")
 
     })
 
