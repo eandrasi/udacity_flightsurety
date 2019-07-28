@@ -17,8 +17,6 @@ async function RegisterOracles() {
 
   // For debugging, check the contract is operational
 
-  console.log("%%%%%%%%%%%%%%%%")
-
   let operational = await flightSuretyApp.methods.isOperational.call();
   console.log(`FlighSuretyApp Found: ${operational}`);
   
