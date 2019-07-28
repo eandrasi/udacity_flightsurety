@@ -12,7 +12,7 @@ contract FlightSuretyData {
     address private contractOwner;                                      // Account used to deploy contract
     bool private operational = true;                                    // Blocks all state changes throughout the contract if false
 
-    // mapping(address => bool) private authorizedCallers;
+    mapping(address => bool) private authorizedCallers;
 
     struct Airline {
         bool isRegistered;
@@ -144,12 +144,21 @@ contract FlightSuretyData {
                     // emit DataAirlinePaidFunding(fundingAddress);
                 }
 
-    function authorizeCaller
-                            ( address _address
-                            )
-                            external
-                            pure
-    {}
+    function authorizeCaller(address contractAddress)
+    public
+    requireContractOwner
+    requireIsOperational
+    {
+        authorizedCallers[contractAddress] = true;
+        // emit AuthorizeCaller(contractAddress);
+    }
+
+    function callerIsAuthorized(address contractAddress)
+    public
+    returns(bool)
+    {
+        return authorizedCallers[contractAddress];
+    }
 
     function isAirline (address airlineAddress) external requireIsOperational returns(bool _valid) {
         _valid = airlines[airlineAddress].isRegistered;

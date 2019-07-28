@@ -68,6 +68,7 @@ contract FlightSuretyApp {
     event AirlinePaidFunding(address airlineAddress);
     event FlightProcessed(string flight, uint8 statusCode);
     event FlightKey(bytes32 flightKey);
+    event OracleRegistered(address oracleaddress, bool isRegistered);
 
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -365,12 +366,13 @@ contract FlightSuretyApp {
                                         isRegistered: true,
                                         indexes: indexes
                                     });
+                                    emit OracleRegistered(msg.sender, oracles[msg.sender].isRegistered);
     }
 
     function getMyIndexes
                             (
                             )
-                            external
+                            public
                             view
                             returns(uint8[3] memory)
     {
