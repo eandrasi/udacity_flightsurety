@@ -420,10 +420,10 @@ contract FlightSuretyApp {
         emit OracleReport(airline, flight, timestamp, statusCode);
         if (oracleResponses[key].responses[statusCode].length >= MIN_RESPONSES) {
 
-            emit FlightStatusInfo(airline, flight, timestamp, statusCode);
-
             // Handle flight status as appropriate
             processFlightStatus(airline, flight, timestamp, statusCode);
+
+            emit FlightStatusInfo(airline, flight, timestamp, statusCode);
         }
     }
 

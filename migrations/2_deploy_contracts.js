@@ -16,10 +16,11 @@ module.exports = function(deployer, network, accounts) {
                     flightSuretyApp = instance
                     let config = {
                         localhost: {
-                            url: 'http://localhost:8545',
+                            url: 'http://localhost:9545',
                             dataAddress: FlightSuretyData.address,
                             appAddress: FlightSuretyApp.address,
                             firstAirline: firstAirline
+                            // I need here an array of addresses for the Oracles
                         }
                     }
                     fs.writeFileSync(__dirname + '/../src/dapp/config.json',JSON.stringify(config, null, '\t'), 'utf-8');
